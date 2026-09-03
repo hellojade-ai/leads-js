@@ -228,6 +228,23 @@ test("http:// base URL is rejected unless loopback", () => {
   assert.doesNotThrow(() => new IntakeClient({ baseUrl: "https://intake.hellojade.ai/" }));
 });
 
+test("duplicate X-Request-Id / Retry-After headers (edge + app) read as the FIRST value", async () => {
+  stub.push({ status: 429, body: { error: "rate_limited" }, headers: { "retry-after": ["2", "2"], "x-request-id": ["a", "a"] } }, { status: 202, body: ACCEPTED, headers: { "x-request-id": ["a", "a"] } });
+  const out = await mk().submitLead(lead, { idempotencyKey: "A" });
+  assert.equal(out.requestId, "a");
+  assert.deepEqual(sleeps, [2000]);
+  stub.push({ status: 401, body: { error: "unauthorized" }, headers: { "x-request-id": ["b", "b"] } });
+  await assert.rejects(mk().submitLead(lead, { idempotencyKey: "A" }), (e) => e.requestId === "b");
+  assert.equal(parseRetryAfter("3, 3"), 3);
+});
+
+test("fetch is invoked as a plain function (browser 'Illegal invocation' guard)", async () => {
+  stub.push({ status: 202, body: ACCEPTED });
+  const strict = function (url, init) { if (this !== undefined && this !== globalThis) throw new TypeError("Illegal invocation"); return fetch(url, init); };
+  const out = await mk({ fetch: strict }).submitLead(lead, { idempotencyKey: "A" });
+  assert.equal(out.event_id, "evt_01");
+});
+
 test("parseRetryAfter: seconds, HTTP-date, garbage", () => {
   assert.equal(parseRetryAfter("5"), 5);
   assert.equal(parseRetryAfter("0"), 1);

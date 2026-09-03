@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Request a quote (relay)</title>
+<style>
+  body { margin: 0; font-family: system-ui, sans-serif; background: #f4f5f7; }
+  main { max-width: 720px; margin: 2rem auto; padding: 1.5rem; background: #fff; border-radius: 12px; }
+</style>
+</head>
+<body>
+<main>
+  <!--
+    Relay mode (RECOMMENDED). The browser posts to YOUR server at relay-url with
+    the same Idempotency-Key / X-Request-Id headers and NO API key; your server
+    adds the key and forwards with the Node kit. See relay-node.mjs.
+    A relative relay-url is resolved against this page.
+
+    vocabulary-url points the project_area lookup at the relay too, so this page
+    makes NO cross-origin request at all and needs no CORS grant. Drop it and the
+    element fetches the vocabulary from the intake host directly (which does need
+    CORS); if that fails, the select degrades to a free-text input.
+  -->
+  <!-- No namespace= here on purpose: in relay mode YOUR server owns the
+       Idempotency-Key prefix (see relay-node.mjs), which a browser cannot
+       tamper with. The attribute applies to direct mode only. -->
+  <hellojade-lead-form
+    relay-url="/api/lead"
+    vocabulary-url="/api/vocabulary"
+    heading="Request a quote"></hellojade-lead-form>
+</main>
+<script type="module">
+  import "../hellojade-lead-form.js";
+  document.addEventListener("hellojade:accepted", (e) => console.log("accepted", e.detail.event_id));
+</script>
+</body>
+</html>

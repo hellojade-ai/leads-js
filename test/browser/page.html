@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>hellojade-lead-form test page</title>
+<script>
+  // Installed BEFORE the module so a load-time throw is recorded, not lost.
+  // `drive.mjs console` only sees what happens while it is attached; this sees
+  // everything from the first byte.
+  window.__console = [];
+  const push = (type, text) => window.__console.push({ type, text: String(text).slice(0, 500) });
+  for (const level of ["error", "warn"]) {
+    const orig = console[level].bind(console);
+    console[level] = (...a) => { push(level, a.map((x) => (x && x.message) || x).join(" ")); orig(...a); };
+  }
+  addEventListener("error", (e) => push("error", (e.error && e.error.stack) || e.message));
+  addEventListener("unhandledrejection", (e) => push("error", "unhandledrejection: " + ((e.reason && e.reason.message) || e.reason)));
+</script>
+<style>
+  body { margin: 0; padding: 16px; font-family: system-ui, sans-serif; background: #f6f7f8; }
+  main { max-width: 720px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 12px; }
+  section + section { margin-top: 24px; border-top: 1px solid #e3e5e8; padding-top: 20px; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: #5b5f66; margin: 0 0 12px; }
+  #log { font: 12px/1.4 ui-monospace, monospace; white-space: pre-wrap; margin-top: 12px; color: #444; }
+</style>
+</head>
+<body>
+<main>
+  <section>
+    <h2>Direct mode</h2>
+    <hellojade-lead-form id="form" base-url="__STUB__" api-key="test-key" namespace="test-site" heading="Request a quote"></hellojade-lead-form>
+  </section>
+  <section>
+    <h2>Relay mode (no API key in the page)</h2>
+    <hellojade-lead-form id="relayform" relay-url="__STUB__/__relay" vocabulary-url="__STUB__/__relay-vocab" heading="Request a quote (relay)" submit-label="Send via relay"></hellojade-lead-form>
+  </section>
+  <div id="log" aria-hidden="true"></div>
+</main>
+<script type="module">
+  import "/hellojade-lead-form.js";
+  const log = document.getElementById("log");
+  window.__events = [];
+  for (const t of ["hellojade:accepted", "hellojade:error"]) {
+    document.addEventListener(t, (e) => { window.__events.push({ type: t, detail: e.detail, id: e.target.id }); log.textContent += t + " " + JSON.stringify(e.detail && (e.detail.event_id || e.detail.name)) + "\n"; });
+  }
+</script>
+</body>
+</html>

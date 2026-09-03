@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Request a quote</title>
+<style>
+  body { margin: 0; font-family: system-ui, sans-serif; background: #f4f5f7; }
+  main { max-width: 720px; margin: 2rem auto; padding: 1.5rem; background: #fff; border-radius: 12px; }
+  hellojade-lead-form { --hj-accent: #0f6b5c; }
+</style>
+</head>
+<body>
+<main>
+  <!--
+    Direct mode. Two things must be true for this to work:
+      1. hellojade has enabled CORS for THIS page's origin (ask when your key is issued).
+      2. You accept that the key is visible to every visitor (view-source, devtools).
+    If either is not true, use relay-usage.html instead.
+  -->
+  <hellojade-lead-form
+    api-key="REPLACE_WITH_YOUR_PARTNER_KEY"
+    namespace="acme-site"
+    heading="Request a free roof inspection"
+    submit-label="Request inspection"></hellojade-lead-form>
+</main>
+<script type="module">
+  // Copy hellojade-intake.js and hellojade-lead-form.js next to this page (see README "Install").
+  import "../hellojade-lead-form.js";
+  document.addEventListener("hellojade:accepted", (e) => {
+    // e.detail = { event_id, status: "accepted" | "duplicate", flags, source, requestId }
+    console.log("lead accepted", e.detail.event_id, e.detail.flags);
+  });
+  document.addEventListener("hellojade:error", (e) => {
+    console.warn("lead rejected", e.detail.name, e.detail.status, e.detail.requestId);
+  });
+</script>
+</body>
+</html>

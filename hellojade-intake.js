@@ -103,6 +103,10 @@ export function parseRetryAfter(value, now = Date.now()) {
   if (value == null || value === "") return 1;
   const s = String(value).trim();
   if (/^\d+$/.test(s)) return Math.max(1, Number(s));
+  // The edge and the app may both set the header; Headers.get joins them with
+  // ", ". An HTTP-date also contains a comma, so only split an integer list.
+  const m = /^(\d+)\s*,/.exec(s);
+  if (m) return Math.max(1, Number(m[1]));
   const t = Date.parse(s);
   if (Number.isNaN(t)) return 1;
   return Math.max(1, Math.ceil((t - now) / 1000));
@@ -276,8 +280,12 @@ export class IntakeClient {
       signal.addEventListener("abort", onOuter, { once: true });
     }
     const timer = this.timeoutMs > 0 ? setTimeout(() => ctl.abort(new Error(`timeout after ${this.timeoutMs} ms`)), this.timeoutMs) : null;
+    // Call fetch as a plain function: invoking it as a method of this client
+    // makes Chrome throw "Illegal invocation" (Node is lenient, so unit tests
+    // alone would never catch it).
+    const doFetch = this.fetch;
     try {
-      const res = await this.fetch(this.baseUrl + path, {
+      const res = await doFetch(this.baseUrl + path, {
         method,
         headers: {
           Accept: "application/json",

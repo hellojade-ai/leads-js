@@ -1,0 +1,39 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: node ${{ matrix.node }} / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        node: ["18", "20", "22", "24"]
+        include:
+          - os: macos-latest
+            node: "22"
+          - os: windows-latest
+            node: "22"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - name: syntax check both modules
+        run: npm run check
+      - name: unit tests against a local stub
+        run: npm test
+
+  # test/browser/run.sh drives a real Chrome from the local fleet on the
+  # maintainer's machine. It is deliberately NOT in CI: a workflow that cannot
+  # pass is worse than an honest note. It is run before every tag; see
+  # CONTRIBUTING.md#releasing.
