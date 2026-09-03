@@ -9,7 +9,7 @@
  * Brief:    https://intake.hellojade.ai/api/INTEGRATION.md
  */
 
-export const VERSION = "0.1.0";
+export const VERSION = "0.1.1";
 export const DEFAULT_BASE_URL = "https://intake.hellojade.ai";
 
 const DEFAULT_RETRY = Object.freeze({
@@ -69,13 +69,33 @@ export class TransportError extends IntakeError {
 
 /* ------------------------------------------------------------------ */
 
-function randomId() {
+/**
+ * A v4-shaped id, for `X-Request-Id` and (in the element) `Idempotency-Key`.
+ *
+ * Three tiers, because `crypto` is not always there:
+ *   1. `crypto.randomUUID()`      — the normal path
+ *   2. `crypto.getRandomValues()` — WebCrypto present, `randomUUID` absent
+ *   3. `Math.random()`            — no WebCrypto global at all
+ *
+ * 🔴 Tier 3 is not hypothetical. It is reached on **Node 18**, where
+ * `globalThis.crypto` only became a global in Node 19, and in **any browser on
+ * a non-secure origin**, where WebCrypto is not exposed at all — a plain
+ * `http://` dev server is the usual case. Reaching for `c.getRandomValues`
+ * without the guard is a `TypeError` on both, which is exactly what CI caught
+ * on the Node 18 leg after 0.1.0 shipped.
+ *
+ * Tier 3 is safe HERE and nowhere else: both ids need to be **unique**, not
+ * **unguessable**. A request id is a correlation handle, and an idempotency key
+ * is scoped to a tenant and only usable by someone who already holds the API
+ * key. Do not reuse this for a token, a nonce, a session id, or anything an
+ * attacker benefits from predicting.
+ */
+export function randomId() {
   const c = globalThis.crypto;
   if (c && typeof c.randomUUID === "function") return c.randomUUID();
-  // crypto.randomUUID is secure-context only; on http:// fall back to a v4
-  // assembled from getRandomValues.
   const b = new Uint8Array(16);
-  c.getRandomValues(b);
+  if (c && typeof c.getRandomValues === "function") c.getRandomValues(b);
+  else for (let i = 0; i < 16; i++) b[i] = (Math.random() * 256) | 0;
   b[6] = (b[6] & 0x0f) | 0x40;
   b[8] = (b[8] & 0x3f) | 0x80;
   const h = [...b].map((x) => x.toString(16).padStart(2, "0")).join("");

@@ -28,7 +28,7 @@
  *   hellojade:accepted  detail = { event_id, status, flags, ... }
  *   hellojade:error     detail = the error (ValidationError, ApiError, ...)
  */
-import { IntakeClient, ValidationError, ApiError, TransportError } from "./hellojade-intake.js";
+import { IntakeClient, ValidationError, ApiError, TransportError, randomId } from "./hellojade-intake.js";
 
 const FIELDS = [
   { name: "first_name", label: "First name", required: true, autocomplete: "given-name", max: 100 },
@@ -46,17 +46,6 @@ const FIELDS = [
 const SERVICES = ["replacement", "repair", "remodel", "maintain"];
 const US_ZIP = /^\d{5}(-?\d{4})?$/;
 const CA_POSTAL = /^[A-Za-z]\d[A-Za-z] ?\d[A-Za-z]\d$/;
-
-function uuid() {
-  const c = globalThis.crypto;
-  if (c && typeof c.randomUUID === "function") return c.randomUUID();
-  const b = new Uint8Array(16);
-  c.getRandomValues(b);
-  b[6] = (b[6] & 0x0f) | 0x40;
-  b[8] = (b[8] & 0x3f) | 0x80;
-  const h = [...b].map((x) => x.toString(16).padStart(2, "0")).join("");
-  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
-}
 
 const STYLE = `
 :host {
@@ -186,7 +175,7 @@ export class HelloJadeLeadForm extends HTMLElement {
 
   /** The current Idempotency-Key (minted once per fill, reused on retry). */
   get idempotencyKey() {
-    if (!this.#idempotencyKey) this.#idempotencyKey = uuid();
+    if (!this.#idempotencyKey) this.#idempotencyKey = randomId();
     return this.#idempotencyKey;
   }
 

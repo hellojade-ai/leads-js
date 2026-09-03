@@ -1,9 +1,24 @@
 import { test, before, after, beforeEach } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { startStub } from "./stub.mjs";
 import {
-  IntakeClient, ApiError, ValidationError, RateLimitedError, TransportError, parseRetryAfter, DEFAULT_BASE_URL, VERSION,
+  IntakeClient, ApiError, ValidationError, RateLimitedError, TransportError, parseRetryAfter, randomId, DEFAULT_BASE_URL, VERSION,
 } from "../hellojade-intake.js";
+
+// Swap globalThis.crypto for the duration of fn. It is an accessor property in
+// modern Node, so a plain assignment silently does nothing — the whole point of
+// these tests is a platform where crypto is missing, and a no-op swap would
+// make them pass against the very bug they exist to catch.
+const withCrypto = async (replacement, fn) => {
+  const original = Object.getOwnPropertyDescriptor(globalThis, "crypto");
+  Object.defineProperty(globalThis, "crypto", { value: replacement, configurable: true, writable: true });
+  try {
+    assert.equal(globalThis.crypto, replacement, "the crypto swap did not take effect");
+    return await fn();
+  } finally { Object.defineProperty(globalThis, "crypto", original); }
+};
+const V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
 let stub;
 const sleeps = [];
@@ -22,9 +37,14 @@ before(async () => { stub = await startStub(); });
 after(async () => { await stub.close(); });
 beforeEach(() => { stub.queue.length = 0; stub.requests.length = 0; sleeps.length = 0; });
 
-test("exports", () => {
-  assert.equal(VERSION, "0.1.0");
+test("exports, and VERSION matches package.json", () => {
+  // Asserted against package.json rather than a literal, so the release step
+  // that bumps both cannot half-happen. A hardcoded expectation here just makes
+  // every bump edit a test, which teaches you to edit it without reading it.
+  const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
+  assert.equal(VERSION, pkg.version);
   assert.equal(DEFAULT_BASE_URL, "https://intake.hellojade.ai");
+  assert.equal(typeof randomId, "function");
 });
 
 test("202 accepted: headers, body, no source, requestId from header", async () => {
@@ -252,4 +272,42 @@ test("parseRetryAfter: seconds, HTTP-date, garbage", () => {
   assert.equal(parseRetryAfter("garbage"), 1);
   const now = Date.UTC(2026, 8, 3, 12, 0, 0);
   assert.equal(parseRetryAfter(new Date(now + 4000).toUTCString(), now), 4);
+});
+
+test("randomId works with NO crypto global at all (Node 18, and any http:// origin)", async () => {
+  // Node only exposed globalThis.crypto from v19, and browsers do not expose
+  // WebCrypto on a non-secure origin. 0.1.0 dereferenced it unguarded and threw
+  // TypeError on both; CI caught it on the Node 18 leg.
+  await withCrypto(undefined, () => {
+    const ids = new Set();
+    for (let i = 0; i < 200; i++) {
+      const id = randomId();
+      assert.match(id, V4, "fallback id must still be v4-shaped");
+      ids.add(id);
+    }
+    assert.equal(ids.size, 200, "fallback ids must be unique");
+  });
+});
+
+test("randomId uses getRandomValues when randomUUID is absent (non-secure context)", async () => {
+  let used = 0;
+  await withCrypto({ getRandomValues: (b) => { used++; for (let i = 0; i < b.length; i++) b[i] = i * 7; return b; } }, () => {
+    assert.match(randomId(), V4);
+    assert.equal(used, 1);
+  });
+});
+
+test("randomId prefers crypto.randomUUID when it exists", async () => {
+  await withCrypto({ randomUUID: () => "11111111-2222-4333-8444-555555555555", getRandomValues: () => { throw new Error("must not be called"); } }, () => {
+    assert.equal(randomId(), "11111111-2222-4333-8444-555555555555");
+  });
+});
+
+test("a whole submitLead round trip survives a missing crypto global", async () => {
+  stub.push({ status: 202, body: ACCEPTED });
+  await withCrypto(undefined, async () => {
+    const out = await mk().submitLead(lead, { idempotencyKey: "A" });
+    assert.equal(out.event_id, "evt_01");
+    assert.match(stub.requests.at(-1).headers["x-request-id"], V4);
+  });
 });

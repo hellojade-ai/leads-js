@@ -37,8 +37,8 @@ that handles a visitor's phone number. Serve these files from your own origin.
 ### Copy the two files (what most sites do)
 
 ```sh
-curl -O https://raw.githubusercontent.com/hellojade-ai/leads-js/v0.1.0/hellojade-intake.js
-curl -O https://raw.githubusercontent.com/hellojade-ai/leads-js/v0.1.0/hellojade-lead-form.js
+curl -O https://raw.githubusercontent.com/hellojade-ai/leads-js/v0.1.1/hellojade-intake.js
+curl -O https://raw.githubusercontent.com/hellojade-ai/leads-js/v0.1.1/hellojade-lead-form.js
 ```
 
 They must sit **next to each other** — `hellojade-lead-form.js` imports
@@ -57,13 +57,13 @@ globals.
 
 ```sh
 git submodule add https://github.com/hellojade-ai/leads-js.git third_party/leads-js
-cd third_party/leads-js && git checkout v0.1.0 && cd -
+cd third_party/leads-js && git checkout v0.1.1 && cd -
 ```
 
 ### From a bundler
 
 ```sh
-npm install github:hellojade-ai/leads-js#v0.1.0
+npm install github:hellojade-ai/leads-js#v0.1.1
 ```
 
 ```js
@@ -74,7 +74,7 @@ import "@hellojade/intake-browser/form";
 | | |
 |---|---|
 | Package name | `@hellojade/intake-browser` |
-| Version | `0.1.0` |
+| Version | `0.1.1` |
 | Module format | ES module only (`"type": "module"`), no CommonJS build |
 | Runtime dependencies | none |
 | Build step | none |
@@ -446,9 +446,13 @@ Two of those are worth naming, because the obvious answer is wrong in both direc
   reach back to Safari 12.1, but the class uses `#private` **methods**, which Safari did not
   ship until 15. Quoting the API floor would have promised four Safari versions that cannot
   parse the file at all.
-- **`crypto.randomUUID()` is in neither floor.** It is secure-context only, so the client
-  falls back to assembling a v4 from `crypto.getRandomValues()` — which is also what keeps it
-  working on an `http://` development origin.
+- **`crypto.randomUUID()` is in neither floor**, and neither is WebCrypto at all. Request
+  ids and idempotency keys come from a three-tier `randomId()`: `crypto.randomUUID()`, then
+  `crypto.getRandomValues()`, then `Math.random()`. The last tier exists because a browser on
+  a **non-secure origin exposes no `crypto` object whatsoever** — any plain `http://` dev
+  server — and because Node only made `globalThis.crypto` a global in v19, which is what broke
+  0.1.0 on its own declared Node 18 floor. Both ids need to be *unique*, not *unguessable*, so
+  the fallback is sound here; do not reuse `randomId()` for a token or a nonce.
 
 Internet Explorer is not supported and never will be; it has no custom elements at all.
 There is no polyfill path and no transpiled build. To reach older browsers, use `IntakeClient`

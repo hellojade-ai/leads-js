@@ -3,9 +3,36 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.1] — 2026-09-03
+
+### Fixed
+
+- 🔴 **`randomId()` threw `TypeError: Cannot read properties of undefined (reading
+  'getRandomValues')` wherever there is no `crypto` global.** The guard covered the
+  `crypto.randomUUID()` fast path and then dereferenced `crypto` unconditionally in the
+  fallback. That breaks **Node 18** — which only got `globalThis.crypto` in v19, and which
+  `engines` and the README both declare as the floor — and **any browser on a non-secure
+  origin**, where WebCrypto is not exposed at all, i.e. every plain `http://` dev server.
+  `randomId()` now falls through to `Math.random()` and is exported and tested directly;
+  four regression tests swap `globalThis.crypto` out and one of them drives a whole
+  `submitLead()` round trip without it.
+
+  **Do not use 0.1.0.** It is left in place rather than moved, because a tag partners can pin
+  has to mean one thing forever — but it fails on its own stated minimum Node version, and CI
+  was red on it. Nothing else changed between the two.
+
+### Changed
+
+- `randomId()` is exported from `hellojade-intake.js` and the element imports it, replacing
+  a byte-identical private copy that carried the same defect and would have needed the same
+  fix twice.
+- The `exports` test now asserts `VERSION` against `package.json` rather than a literal, so a
+  half-finished version bump fails the build instead of teaching the next person to edit a
+  test they did not read.
+
 ## [0.1.0] — 2026-09-03
 
-First release.
+First release. **Superseded by 0.1.1 within the hour — see above; do not pin this tag.**
 
 ### Added
 

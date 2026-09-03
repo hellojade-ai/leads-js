@@ -1,6 +1,6 @@
 {
   "name": "@hellojade/intake-browser",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Zero-dependency browser ES module and <hellojade-lead-form> web component for the hellojade Partner Intake API",
   "type": "module",
   "main": "hellojade-intake.js",
