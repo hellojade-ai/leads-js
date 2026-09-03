@@ -1,0 +1,4 @@
+node_modules/
+test/browser/out/
+*.png
+.DS_Store
