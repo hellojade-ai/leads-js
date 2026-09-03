@@ -16,7 +16,14 @@ const withCrypto = async (replacement, fn) => {
   try {
     assert.equal(globalThis.crypto, replacement, "the crypto swap did not take effect");
     return await fn();
-  } finally { Object.defineProperty(globalThis, "crypto", original); }
+  } finally {
+    // 🔴 On a platform with NO crypto global — Node 18, the very one these
+    // tests exist for — the saved descriptor is `undefined` and defineProperty
+    // throws "Property description must be an object". The helper written to
+    // test a missing global assumed the global was there. Restore symmetrically.
+    if (original) Object.defineProperty(globalThis, "crypto", original);
+    else delete globalThis.crypto;
+  }
 };
 const V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 

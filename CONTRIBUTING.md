@@ -26,8 +26,16 @@ npm test              # node:test against a local stub (Node 18+), 28 tests
 npm run test:browser  # real Chrome, 21 checks; LOCAL ONLY
 ```
 
-`npm test` runs the same `hellojade-intake.js` the browser loads — it uses only
-`fetch`, `AbortController` and `crypto`, so Node needs no shim.
+`npm test` runs the same `hellojade-intake.js` the browser loads — it uses only `fetch`,
+`AbortController` and `crypto`, so Node needs no shim. `test/no-crypto.test.mjs` runs the
+client again with `globalThis.crypto` deleted, which is the shape of **Node 18** (the global
+arrived in v19) and of **any browser on a non-secure origin**. To reproduce that condition
+against the main suite too:
+
+```sh
+echo 'delete globalThis.crypto;' > /tmp/nc.mjs
+NODE_OPTIONS="--import file:///tmp/nc.mjs" node --test test/client.test.mjs
+```
 
 `npm run test:browser` starts a static server and a stub intake API, checks out a
 **headless** instance from the local chrome fleet, exercises the element end to
@@ -50,6 +58,10 @@ Tags on GitHub only. **This package is not published to npm** and CI does not
 publish anywhere; `package.json` carries `"private": true` so an accidental
 `npm publish` is refused.
 
+0. 🔴 **Tag only a commit CI has already gone green on.** Push to `main`, wait for the run,
+   then tag. A tag that was never green was never a release — and because partners pin
+   tags, the fix for a bad one is a new version, not a moved ref. Both of the first two
+   tags cut here had to be deleted before anyone consumed them, for exactly this reason.
 1. Run both suites locally, including the real-Chrome one:
    `npm run check && npm test && npm run test:browser`. The browser test is not
    in CI, so a tag is the only place it is enforced — run it and read the

@@ -1,6 +1,6 @@
 {
   "name": "@hellojade/intake-browser",
-  "version": "0.1.1",
+  "version": "0.1.0",
   "description": "Zero-dependency browser ES module and <hellojade-lead-form> web component for the hellojade Partner Intake API",
   "type": "module",
   "main": "hellojade-intake.js",
@@ -8,14 +8,24 @@
     ".": "./hellojade-intake.js",
     "./form": "./hellojade-lead-form.js"
   },
-  "files": ["hellojade-intake.js", "hellojade-lead-form.js", "README.md", "LICENSE"],
+  "files": [
+    "hellojade-intake.js",
+    "hellojade-lead-form.js",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
-    "test": "node --test test/client.test.mjs",
+    "test": "node --test test/client.test.mjs test/no-crypto.test.mjs",
     "check": "node --check hellojade-intake.js && node --check hellojade-lead-form.js",
     "test:browser": "bash test/browser/run.sh"
   },
-  "engines": { "node": ">=18" },
+  "engines": {
+    "node": ">=18"
+  },
   "license": "MIT",
-  "repository": { "type": "git", "url": "https://github.com/hellojade-ai/leads-js" },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hellojade-ai/leads-js"
+  },
   "private": true
 }

@@ -37,8 +37,8 @@ that handles a visitor's phone number. Serve these files from your own origin.
 ### Copy the two files (what most sites do)
 
 ```sh
-curl -O https://raw.githubusercontent.com/hellojade-ai/leads-js/v0.1.1/hellojade-intake.js
-curl -O https://raw.githubusercontent.com/hellojade-ai/leads-js/v0.1.1/hellojade-lead-form.js
+curl -O https://raw.githubusercontent.com/hellojade-ai/leads-js/v0.1.0/hellojade-intake.js
+curl -O https://raw.githubusercontent.com/hellojade-ai/leads-js/v0.1.0/hellojade-lead-form.js
 ```
 
 They must sit **next to each other** — `hellojade-lead-form.js` imports
@@ -57,13 +57,13 @@ globals.
 
 ```sh
 git submodule add https://github.com/hellojade-ai/leads-js.git third_party/leads-js
-cd third_party/leads-js && git checkout v0.1.1 && cd -
+cd third_party/leads-js && git checkout v0.1.0 && cd -
 ```
 
 ### From a bundler
 
 ```sh
-npm install github:hellojade-ai/leads-js#v0.1.1
+npm install github:hellojade-ai/leads-js#v0.1.0
 ```
 
 ```js
@@ -74,7 +74,7 @@ import "@hellojade/intake-browser/form";
 | | |
 |---|---|
 | Package name | `@hellojade/intake-browser` |
-| Version | `0.1.1` |
+| Version | `0.1.0` |
 | Module format | ES module only (`"type": "module"`), no CommonJS build |
 | Runtime dependencies | none |
 | Build step | none |

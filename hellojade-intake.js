@@ -9,7 +9,7 @@
  * Brief:    https://intake.hellojade.ai/api/INTEGRATION.md
  */
 
-export const VERSION = "0.1.1";
+export const VERSION = "0.1.0";
 export const DEFAULT_BASE_URL = "https://intake.hellojade.ai";
 
 const DEFAULT_RETRY = Object.freeze({
