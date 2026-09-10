@@ -27,5 +27,6 @@
     "type": "git",
     "url": "https://github.com/hellojade-ai/leads-js"
   },
-  "private": true
+  "private": true,
+  "homepage": "https://hellojade.ai/developers/provide-leads"
 }
